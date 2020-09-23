@@ -58,20 +58,26 @@ def parsuj_provozovnu(tabulka):
     Vrátí: dict
     """
     d = {}
+
     rows = tabulka.find_all('tr')
     divs = rows[0].find_all('div')
     d['ev_cislo'] = divs[0].get_text(strip=True).strip('Evidenční číslo: ')
     d['nazev'] = divs[1].get_text(strip=True)
 
-    adresa = divs[2].get_text(strip=True)
-    rozdelena_adresa = adresy.rozdel_adresu(adresy.uprav_adresu(adresa))
     soucasti_adresy = ('psc', 'obec', 'ulice', 'cp', 'okres', 'kraj')
-    for k, v in zip(soucasti_adresy, rozdelena_adresa):
-        d[k] = v
+    try:
+        adresa = divs[2].get_text(strip=True)
+        rozdelena_adresa = adresy.rozdel_adresu(adresy.uprav_adresu(adresa))
+        for k, v in zip(soucasti_adresy, rozdelena_adresa):
+            d[k] = v
+    # Adresa schází
+    except IndexError:
+        d.update({soucast: '' for soucast in soucasti_adresy})
 
     if len(rows) > 2:  # Neschází informace o katastru
         for th, td in zip(rows[1].find_all('th'), rows[2].find_all('td')):
             d[uklid_klic(th.get_text(strip=True))] = td.get_text(strip=True)
+
     return d
 
 
@@ -112,7 +118,8 @@ def parsuj_stranku(bs):
 
     # Rozsah podnikání a technické podmínky
     lic_tez_total_table = bs.find('table', {'class': 'lic-tez-total-table'})
-    d.update(parsuj_vykony(lic_tez_total_table))
+    if lic_tez_total_table:  # Zrušené, zaniklé nemají výkony
+        d.update(parsuj_vykony(lic_tez_total_table))
 
     # Seznam jednotlivých provozoven k licenci
     headers = bs.find_all('table', {'class': 'lic-tez-header-table'})

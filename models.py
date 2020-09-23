@@ -1,5 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Float, String, Date
+from sqlalchemy import Column, Integer, Float, String, Date, ForeignKey
+from sqlalchemy.orm import relationship
 
 
 Base = declarative_base()
@@ -29,6 +30,7 @@ class Subjekt(Base):
     subjekt_den_nabyti_pravni_moci = Column(Date)
     predmet = Column(String(64))
     odpovedny_zastupce = Column(String(64))
+    verze_licence = Column(Integer)
     pocet_zdroju = Column(Integer)
     celkovy_el = Column(Float)
     celkovy_tep = Column(Float)
@@ -44,6 +46,10 @@ class Subjekt(Base):
     kogenerace_tep = Column(Float)
     plynovy_el = Column(Float)
     plynovy_tep = Column(Float)
+    plynovy_a_spalovaci_el = Column(Float)
+    plynovy_a_spalovaci_tep = Column(Float)
+    bez_nazvu_el = Column(Float)
+    bez_nazvu_tep = Column(Float)
     jaderny_el = Column(Float)
     jaderny_tep = Column(Float)
     precerpavaci_el = Column(Float)
@@ -59,5 +65,70 @@ class Subjekt(Base):
     ostatni_el = Column(Float)
     ostatni_tep = Column(Float)
 
+    provozovny = relationship('Provozovna', back_populates='subjekt')
+
     def __repr__(self):
         return f'<Subjekt: {self.cislo_licence}, {self.subjekt_nazev}>'
+
+
+class Provozovna(Base):
+
+    __tablename__ = 'provozovny'
+
+    id = Column(Integer, primary_key=True)
+    ev_cislo = Column(Integer, index=True)
+    nazev = Column(String(128))
+    adresa = Column(String(128))
+    psc = Column(String(6))
+    obec = Column(String(64))
+    ulice = Column(String(64))
+    cp = Column(String(64))
+    okres = Column(String(64))
+    kraj = Column(String(64))
+    katastralni_uzemi = Column(String(64))
+    kod_katastru = Column(Integer)
+    vymezeni = Column(String(64))
+    pocet_zdroju = Column(Integer)
+    celkovy_el = Column(Float)
+    celkovy_tep = Column(Float)
+    horkovodni_el = Column(Float)
+    horkovodni_tep = Column(Float)
+    teplovodni_el = Column(Float)
+    teplovodni_tep = Column(Float)
+    parni_el = Column(Float)
+    parni_tep = Column(Float)
+    kvet_el = Column(Float)
+    kvet_tep = Column(Float)
+    kogenerace_el = Column(Float)
+    kogenerace_tep = Column(Float)
+    plynovy_el = Column(Float)
+    plynovy_tep = Column(Float)
+    plynovy_a_spalovaci_el = Column(Float)
+    plynovy_a_spalovaci_tep = Column(Float)
+    jaderny_el = Column(Float)
+    jaderny_tep = Column(Float)
+    precerpavaci_el = Column(Float)
+    precerpavaci_tep = Column(Float)
+    paroplynova_el = Column(Float)
+    paroplynova_tep = Column(Float)
+    slunecni_el = Column(Float)
+    slunecni_tep = Column(Float)
+    vetrny_el = Column(Float)
+    vetrny_tep = Column(Float)
+    vodni_el = Column(Float)
+    vodni_tep = Column(Float)
+    ostatni_el = Column(Float)
+    ostatni_tep = Column(Float)
+    bez_nazvu_el = Column(Float)
+    bez_nazvu_tep = Column(Float)
+    vodni_tok = Column(String(64))
+    ricni_km = Column(Float)
+    lat = Column(Float)
+    lon = Column(Float)
+    druh = Column(String(64))
+    subjekt_id = Column(Integer, ForeignKey('subjekty.id'))
+
+    subjekt = relationship('Subjekt', back_populates='provozovny')
+
+    def __repr__(self):
+        return f'<Provozovna: {self.nazev}, {self.obec}, {self.subjekt_licence}>'
