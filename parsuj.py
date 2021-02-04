@@ -41,11 +41,9 @@ def parsuj_drzitele(tabulka):
     for row in tabulka.find_all('tr'):
         try:
             prom = uklid_klic(row.find('th').get_text(strip=True))
-            promenne = ['cislo_licence', 'verze_licence', 'odpovedny_zastupce']
+            promenne = ['cislo_licence', 'verze_licence']
             if prom in promenne:
                 v = row.find('td').get_text(strip=True)
-                if prom == 'odpovedny_zastupce':
-                    v = uprav_osobu(v)
                 d[prom] = v
         except AttributeError:
             continue

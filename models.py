@@ -29,7 +29,7 @@ class Subjekt(Base):
     subjekt_den_zaniku = Column(Date)
     subjekt_den_nabyti_pravni_moci = Column(Date)
     predmet = Column(String(64))
-    odpovedny_zastupce = Column(String(64))
+    odpovedny_zast = Column(String(64))
     verze_licence = Column(Integer)
     pocet_zdroju = Column(Integer)
     celkovy_el = Column(Float)

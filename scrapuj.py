@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Scrapuje udělené licence na výrobu elektřiny z webu ERÚ licence.eru.cz/
 """
@@ -39,8 +39,7 @@ def scrapuj(url, params, db, start, end):
     session.commit()
 
 
-URL = 'http://licence.eru.cz/detail.php'
-params = dict(SelAdProcStatusId='Udělená licence', GroupId='31')
-
 if __name__ == '__main__':
-    scrapuj(URL, params, db='sqlite:///licence.db', start=29_000, end=29_126)
+    URL = 'http://licence.eru.cz/detail.php'
+    PARAMS = dict(SelAdProcStatusId='Udělená licence', GroupId='31')
+    scrapuj(URL, PARAMS, db='sqlite:///licence.db', start=27_000, end=29_306)
