@@ -1,9 +1,11 @@
 import unittest
 from collections import namedtuple
-from scrapuj import URL, params
 import parsuj
 import adresy
 
+
+URL = 'http://licence.eru.cz/detail.php'
+PARAMS = dict(SelAdProcStatusId='Udělená licence', GroupId='31')
 
 Firma = namedtuple('Firma', [
     'cislo_licence', 'provozovny_pocet', 'celkovy_el',
@@ -40,8 +42,8 @@ class ParserTestCez(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        params.update({'lic-id': cez.cislo_licence})
-        cls.bs = parsuj.priprav_bs(URL, params=params)
+        PARAMS.update({'lic-id': cez.cislo_licence})
+        cls.bs = parsuj.priprav_bs(URL, params=PARAMS)
 
     def test_cez_cislo_licence(self):
         result = parsuj.parsuj_stranku(self.bs)['cislo_licence']
@@ -86,8 +88,8 @@ class ParserTestKnezice(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        params.update({'lic-id': knezice.cislo_licence})
-        cls.bs = parsuj.priprav_bs(URL, params=params)
+        PARAMS.update({'lic-id': knezice.cislo_licence})
+        cls.bs = parsuj.priprav_bs(URL, params=PARAMS)
 
     def test_cez_cislo_licence(self):
         result = parsuj.parsuj_stranku(self.bs)['cislo_licence']
