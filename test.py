@@ -12,7 +12,7 @@ Firma = namedtuple('Firma', [
     ])
 
 cez = Firma(
-    '110100146', 29, '10436.003', '5369.050',
+    '110100146', 27, '9716.003', '5232.050',
     'Teplárna Trmice', 'Edisonova', '453', 'Ústí nad Labem', '774979',
     )
 
@@ -60,24 +60,24 @@ class ParserTestCez(unittest.TestCase):
         self.assertEqual(result, cez.celkovy_tep)
 
     def test_cez_trmice_nazev(self):
-        result = parsuj.parsuj_stranku(self.bs)['provozovny'][26]['nazev']
+        result = parsuj.parsuj_stranku(self.bs)['provozovny'][24]['nazev']
         self.assertEqual(result, cez.prov_nazev)
 
     def test_cez_trmice_ulice(self):
-        result = parsuj.parsuj_stranku(self.bs)['provozovny'][26]['ulice']
+        result = parsuj.parsuj_stranku(self.bs)['provozovny'][24]['ulice']
         self.assertEqual(result, cez.prov_ulice)
 
     def test_cez_trmice_cp(self):
-        result = parsuj.parsuj_stranku(self.bs)['provozovny'][26]['cp']
+        result = parsuj.parsuj_stranku(self.bs)['provozovny'][24]['cp']
         self.assertEqual(result, cez.prov_cp)
 
     def test_cez_trmice_okres(self):
-        result = parsuj.parsuj_stranku(self.bs)['provozovny'][26]['okres']
+        result = parsuj.parsuj_stranku(self.bs)['provozovny'][24]['okres']
         self.assertEqual(result, cez.prov_okres)
 
     def test_cez_trmice_kod_katastru(self):
         stranka = parsuj.parsuj_stranku(self.bs)
-        result = stranka['provozovny'][26]['kod_katastru']
+        result = stranka['provozovny'][24]['kod_katastru']
         self.assertEqual(result, cez.prov_kod_katastru)
 
 
