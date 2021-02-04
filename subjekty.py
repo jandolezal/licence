@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Funkce pro parsování xml s daty o držitelích licence.
 """
@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Subjekt
+from models import Base, Subjekt
 
 
 URL_DRZITELE = 'https://www.eru.cz/cs/licence/informace-o-drzitelich'
@@ -82,8 +82,7 @@ if __name__ == '__main__':
     subjekty = parsuj_drzitele(URL_DRZITELE, 'výroba elektřiny')
     engine = create_engine('sqlite:///licence.db')
 
-    # Using alembic
-    # Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
     session = Session()
