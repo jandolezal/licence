@@ -1,3 +1,7 @@
 *.json
 *.csv
 *.db
+*.xml
+dist/
+build/
+*.egg-info
