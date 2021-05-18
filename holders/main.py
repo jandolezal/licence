@@ -13,6 +13,7 @@ from typing import Optional, List, Union
 from dataclasses import dataclass, fields
 from datetime import date
 import csv
+import configparser
 
 import requests
 from bs4 import BeautifulSoup
@@ -208,16 +209,16 @@ def main() -> None:
     # and use sample xml files manually downloaded from the website
     # to directory samples. See config.ini [samples]
     if args['dev']:
-        xml = pathlib.Path('samples') / conf.get('samples', business)
+        try:
+            xml = pathlib.Path('samples') / conf.get('samples', business)
+        except configparser.NoOptionError as e:
+            print(f'{e}. download sample xml for electricity or heat. see config.ini [samples]')
+            raise SystemExit
     else:
         url = conf.get('holders', 'url')
         headers = {'User-Agent': conf.get('headers', 'user_agent')}
-        try:
-            xml = get_xml(url=url, business=business_map[business],
+        xml = get_xml(url=url, business=business_map[business],
                 headers=headers, timeout=3)
-        except KeyError:
-            print('use supported --business options. set -h for help')
-            raise SystemExit
     
     # Parse xml data
     holders = parse_xml(xml)
