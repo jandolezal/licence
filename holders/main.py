@@ -92,15 +92,15 @@ def request_data(url, **kwargs):
         raise SystemExit(e)
 
 
-def get_xml(url: str, business: str, **kwargs) -> str:
-    """Find xml dataset on Energy Regulatory Office's website for a business type.
+def get_xml(url: str, business: str, **kwargs) -> requests.models.Response:
+    """Find and return xml from the website for particular business type.
 
     Args:
-        url (str) : URL with a dataset of licence holders (držitelé licencí)
+        url (str) : Endpoint for licence holders (držitelé licencí) datasets
         business (str) : e.g. 'výroba elektřiny' or 'výroba tepelné energie'
     
     Returns:
-        str
+        requests.models.Reponse
     """
     r = request_data(url, **kwargs)
     bs = BeautifulSoup(r.content, 'html.parser')
@@ -167,8 +167,7 @@ def get_parser():
         action='store',
         choices=[
             'electricity', 'electricity-dist', 'electricity-trade',
-            'heat', 'heat-dist', 'heat-trade',
-            'gas', 'gas-dist', 'gas-trade',
+            'heat', 'heat-dist', 'gas', 'gas-dist', 'gas-trade',
             ],
         default='electricity',
         help='select business type: e.g. electricity or heat (default: electricity)'
@@ -226,13 +225,11 @@ def main() -> None:
     # Save parsed data as csv file in csvs directory
     if args['csv']:
         csv_filename = args['output']
-        csvs = pathlib.Path.cwd() / 'csvs'
-        csvs.mkdir(exist_ok=True)
 
-        subcsvs = csvs / business
-        subcsvs.mkdir(exist_ok=True)
+        output_dir = pathlib.Path(f'csvs/holders/{business}')
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(subcsvs / csv_filename, 'w') as csvf:
+        with open(output_dir / csv_filename, 'w') as csvf:
             fieldnames = [field.name for field in dataclasses.fields(Holder)]
             writer = csv.DictWriter(csvf, fieldnames=fieldnames)
             writer.writeheader()
