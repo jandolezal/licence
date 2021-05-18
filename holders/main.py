@@ -116,8 +116,12 @@ def parse_xml(xml: Union[requests.models.Response, pathlib.Path]) -> List[Holder
     """Parse xml to a list of Holders.
     """
     if isinstance(xml, pathlib.Path):
-        tree = ET.parse(xml)
-        root = tree.getroot()
+        try:
+            tree = ET.parse(xml)
+            root = tree.getroot()
+        except FileNotFoundError:
+            print('download xml files to samples directory with --dev option. see config.ini [samples]')
+            raise SystemExit
     else:
         root = ET.fromstring(xml.text)
     
@@ -199,9 +203,10 @@ def main() -> None:
         'gas-trade': 'obchod s plynem',
     }
     
-    # Request data from the webiste or
+    # Request data from the website or
     # prevent request to the website when developing the app
     # and use sample xml files manually downloaded from the website
+    # to directory samples. See config.ini [samples]
     if args['dev']:
         xml = pathlib.Path('samples') / conf.get('samples', business)
     else:
