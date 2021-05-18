@@ -109,6 +109,7 @@ def get_xml(url: str, business: str, **kwargs) -> requests.models.Response:
     print(f'XML file is at: {xml_url}')
 
     r = request_data(xml_url, **kwargs)
+    r.encoding = 'cp1250'
 
     return r
 
@@ -152,7 +153,7 @@ def get_parser():
         '--dev',
         action='store_true',
         default=False,
-        help='use testig xml file from samples directory (default: False)'
+        help='use manually downloaded xml file from samples directory (default: False)'
     )
 
     parser.add_argument(
