@@ -4,9 +4,7 @@ Find and extract data about licence holders (držitelé licencí)
 from the Czech [Energy Regulatory Office website](https://www.eru.cz/licence/informace-o-drzitelich) for selected business type,
 e.g. for electricity or heat production.
 
-Few metadata like licence number, name of the holder, address, etc.
-
-Before using --dev option download xml files manually to `samples` directory from the web.
+This will extract few metadata about license holders like licence number, name of the holder, address, etc.
 
 
 ## Usage
@@ -44,3 +42,27 @@ optional arguments:
   --output FILENAME     specify csv output filename (default: holders.csv)
 ```
 
+Before using --dev option download xml files manually to `samples` directory from the web.
+
+At this moment only export to csv is implemented. The files are exported in the following structure.
+
+```
+csvs
+└── holders
+    ├── electricity
+    │   └── holders.csv
+    ├── electricity-dist
+    │   └── holders.csv
+    ├── electricity-trade
+    │   └── holders.csv
+    ├── gas
+    │   └── holders.csv
+    ├── gas-dist
+    │   └── holders.csv
+    ├── gas-trade
+    │   └── holders.csv
+    ├── heat
+    │   └── holders.csv
+    └── heat-dist
+        └── holders.csv
+```

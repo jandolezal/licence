@@ -47,6 +47,8 @@ class Holder:
     den_zaniku: date
     den_nabyti: date
     osoba: str
+    predmet: str = None
+
 
 
 def remove_fluff(x: str) -> Optional[str]:
@@ -114,7 +116,10 @@ def get_xml(url: str, business: str, **kwargs) -> requests.models.Response:
     return r
 
 
-def parse_xml(xml: Union[requests.models.Response, pathlib.Path]) -> List[Holder]:
+def parse_xml(
+    xml: Union[requests.models.Response, pathlib.Path],
+    business: str
+    ) -> List[Holder]:
     """Parse xml to a list of Holders.
     """
     if isinstance(xml, pathlib.Path):
@@ -135,6 +140,8 @@ def parse_xml(xml: Union[requests.models.Response, pathlib.Path]) -> List[Holder
         holder = Holder(
             **{new_key: func(original[orig_key]) for orig_key, (new_key, func) in translation.items()}
         )
+
+        holder.predmet = business
 
         holders.append(holder)
 
@@ -221,7 +228,7 @@ def main() -> None:
                 headers=headers, timeout=3)
     
     # Parse xml data
-    holders = parse_xml(xml)
+    holders = parse_xml(xml, business_map[business])
     
     # Save parsed data as csv file in csvs directory
     if args['csv']:

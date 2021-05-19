@@ -12,12 +12,12 @@ test_subject = main.Holder(
     obec='Praha', obec_cast='Smíchov', psc='150 00', okres='Hlavní město Praha', 
     kraj='Hlavní město Praha', zeme='CZ',den_opravneni=datetime.date(2001, 7, 1),
     den_zahajeni=datetime.date(2001, 7, 1), den_zaniku=datetime.date(2026, 7, 16),
-    den_nabyti=datetime.date(2021, 1, 11), osoba='Yvona Křáková'
+    den_nabyti=datetime.date(2021, 1, 11), osoba='Yvona Křáková', predmet='výroba elektřiny'
     )
 
 
 def test_parse_electricity_xml_from_file():
     xml = pathlib.Path('samples') / conf.get('samples', 'electricity')
-    result = main.parse_xml(xml)
+    result = main.parse_xml(xml, 'výroba elektřiny')
     assert result[0] == test_subject
 
