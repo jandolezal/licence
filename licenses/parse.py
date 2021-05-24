@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 
-"""Funkce pro parsování stránky s licencí. 
+"""Funkce pro parsování stránky s licencí.
 
 Data jsou na stránce v html tabulkách.
 
 Jedna licence má celkové výkony za licenci, jednu a více provozoven,
-z nichž ke každé provozovně je, kromě pár údajů jako je název nebo okres, 
-je k dispozici opět seznam výkonů.
+z nichž ke každé provozovně je pár údajů jako název nebo okres
+a opět seznam výkonů.
 
 Některé části mohou náhodně scházet.
 """
 
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, asdict
 import pathlib
 from typing import List
+import csv
 
 
 import bs4
@@ -22,12 +23,14 @@ import requests
 from bs4 import BeautifulSoup
 
 from licenses import address
+from licenses.config import conf
 
 
 @dataclass
 class VykonProvozovna:
-    
-    provozovna_id: str
+
+    provozovna_id: int
+    lic_id: str
     druh: str
     technologie: str
     mw: float
@@ -63,6 +66,50 @@ class Provozovna:
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
+    def export_to_csv(self, business, capacities=True):
+        # Metadata for the facility
+        fac_dir = pathlib.Path(f'csvs/licenses/{business}')
+        if (fac_dir / 'facilities.csv').exists():
+            header = False
+        else:
+            header = True
+
+        fac_dir.mkdir(parents=True, exist_ok=True)
+        with open(fac_dir / 'facilities.csv', 'a') as csvf:
+            fieldnames = [
+                field.name for field in fields(Provozovna)
+                if not field.default_factory == list
+                ]
+            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
+            if header:
+                writer.writeheader()
+
+            export_dict = asdict(self)
+            export_dict.pop('vykony')  # Remove list
+            writer.writerow(export_dict)
+
+        # Capacities for the facility
+        if capacities:
+            cap_dir = pathlib.Path(f'csvs/licenses/{business}')
+
+            if (cap_dir / 'facilities_capacities.csv').exists():
+                header = False
+            else:
+                header = True
+
+            cap_dir.mkdir(parents=True, exist_ok=True)
+            with open(cap_dir / 'facilities_capacities.csv', 'a') as csvf2:
+                fieldnames = [
+                    field.name for field in fields(VykonProvozovna)
+                    if not field.default_factory == list
+                    ]
+                writer = csv.DictWriter(csvf2, fieldnames=fieldnames)
+                if header:
+                    writer.writeheader()
+                for cap in self.vykony:
+                    export_dict = asdict(cap)
+                    writer.writerow(export_dict)
+
 
 @dataclass
 class Licence:
@@ -75,39 +122,93 @@ class Licence:
 
     def add_facility(self, facility):
         self.provozovny.append(facility)
-    
+
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
+    def export_to_csv(self, business, facilities=True, capacities=True):
+
+        lic_dir = pathlib.Path(f'csvs/licenses/{business}')
+
+        if lic_dir.exists():
+            header = False
+        else:
+            header = True
+
+        lic_dir.mkdir(parents=True, exist_ok=True)
+
+        # Few metadata for license
+        with open(lic_dir / 'licenses.csv', 'a') as csvf:
+            fieldnames = [
+                field.name for field in fields(Licence)
+                if not field.default_factory == list
+                ]
+            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
+            if header:
+                writer.writeheader()
+            export_dict = asdict(self)
+            export_dict.pop('vykony')  # Remove lists
+            export_dict.pop('provozovny')
+            writer.writerow(export_dict)
+
+        # Export facilities
+        if facilities:
+            for prov in self.provozovny:
+                prov.export_to_csv(business, capacities=True)
+
+        # Capacities only for the license itself
+        if capacities:
+            cap_dir = pathlib.Path(f'csvs/licenses/{business}')
+            cap_dir.mkdir(parents=True, exist_ok=True)
+            with open(cap_dir / 'capacities.csv', 'a') as csvf:
+                fieldnames = [
+                    field.name for field in fields(VykonLicence)
+                    if not field.default_factory == list
+                    ]
+                writer = csv.DictWriter(csvf, fieldnames=fieldnames)
+                if header:
+                    writer.writeheader()
+                for cap in self.vykony:
+                    export_dict = asdict(cap)
+                    writer.writerow(export_dict)
+
+
+def request_soup(url: str, params: dict) -> bs4.BeautifulSoup:
+    """Request page and retur BeautifulSoup from its text
+    """
+    headers = {'User-Agent': conf.get('headers', 'user_agent')}
+    r = requests.get(url, params=params, headers=headers)
+    r.encoding = 'utf-8'
+    return BeautifulSoup(r.text, 'html.parser')
+
 
 def parse_capacity(table: bs4.BeautifulSoup) -> dict:
-    """Z BeautifulSoup tabulky slovník s výkony.
-    tabulka: bs4.element.Tag
-    Vrátí: dict
+    """Parse table with data about installed capacity.
     """
     d = {}
     for row in table.find_all('tr')[2:]:  # První dva řádky nemají hodnoty
         # k = prepare_key(row.find('th').get_text())
         k = row.find('th').get_text().strip('\n\t')
-    
-        num_columns = len(row.find_all('td'))
 
-        if num_columns == 2:
-            vykony = row.find_all('td')
-            el = vykony[0].get_text(strip=True).replace(' ', '')
-            tep = vykony[1].get_text(strip=True).replace(' ', '')
-            d[(k, 'Elektrický')] = float(el)
-            d[(k, 'Tepelný')] = float(tep)
+        # num_columns = len(row.find_all('td'))
+        num_columns = len(row.find_all(['th', 'td']))
+
+        if num_columns == 3:
+            vykony = row.find_all(['th', 'td'])
+            el = vykony[-2].get_text(strip=True).replace(' ', '')
+            tep = vykony[-1].get_text(strip=True).replace(' ', '')
+            d[(k, 'Elektrický')] = float(el) if el else None
+            d[(k, 'Tepelný')] = float(tep) if tep else None
         else:
+            # Case when data in the row are not capacities
+            # Počet zdrojů, Tok or Říční km
             v = row.find('td')
             d[k] = v.get_text(strip=True)
     return d
 
 
-def parse_facility_header(tabulka: bs4.BeautifulSoup) -> dict:
-    """Z BeautifulSoup tabulky slovník s identifikací provozovny.
-    tabulka: bs4.element.Tag
-    Vrátí: Provozovna
+def parse_facility_header(tabulka: bs4.element.Tag) -> dict:
+    """Parse metadata about facility from html table.
     """
     d = {}
 
@@ -134,21 +235,11 @@ def parse_facility_header(tabulka: bs4.BeautifulSoup) -> dict:
 
 
 def prepare_key(original):
+    """Make the variable from the first column more useful.
+    """
     normalizovane = unicodedata.normalize('NFD', original)
     nove = normalizovane.encode('ascii', 'ignore').decode('utf-8')
     return nove.strip().lower().replace(' ', '_')
-
-
-def request_soup(url: str, params: dict) -> bs4.BeautifulSoup:
-    """BeautifulSoup z celé stránky
-    url: str
-    params: dict
-    Vrátí: bs4.BeautifulSoup
-    """
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) Gecko/20100101 Firefox/80.0'}
-    r = requests.get(url, params=params, headers=headers)
-    r.encoding = 'utf-8'
-    return BeautifulSoup(r.text, 'html.parser')
 
 
 def parse_page(business: str, lic_id: str, bs: bs4.BeautifulSoup) -> Licence:
@@ -156,22 +247,30 @@ def parse_page(business: str, lic_id: str, bs: bs4.BeautifulSoup) -> Licence:
     """
 
     lic = Licence(id=lic_id, predmet=business)
-    
+
     # Rozsah podnikání a technické podmínky
-    lic_tez_total_table = bs.find('table', {'class': 'lic-tez-total-table'})
+    lic_tez_total_table = (
+        bs.find('table', {'class': 'lic-tez-total-table'})
+        or
+        bs.find('table', {'id': 'lic-tez-total-table'})
+        )
+
     if lic_tez_total_table:  # Zrušené, zaniklé licence nemají výkony
         lic_capacity = parse_capacity(lic_tez_total_table)
-    
-    # Zpracuje výkony pro licenci
-    # Tabulka obsahuje nejen výkony (tři sloupce), tak počet zdrojů (dva sloupce)
-    # a vodní tok s km (dva sloupce, zatím nezpracováno)
-    for k, v in lic_capacity.items():
-        if len(k) == 2 and v > 0:
-            vykon_lic = VykonLicence(lic_id=lic_id, druh=k[1], technologie=k[0], mw=v)
-            lic.add_capacity(vykon_lic)
-        if k == 'Počet zdrojů':
-            lic.pocet_zdroju = int(v)
-    
+
+        # Zpracuje výkony pro licenci
+        for k, v in lic_capacity.items():
+            if len(k) == 2 and (isinstance(v, float) and v > 0):
+                vykon_lic = VykonLicence(
+                    lic_id=lic_id,
+                    druh=k[1],
+                    technologie=k[0],
+                    mw=v
+                    )
+                lic.add_capacity(vykon_lic)
+            if k == 'Počet zdrojů':
+                lic.pocet_zdroju = int(v)
+
     # Seznam jednotlivých provozoven k licenci
     # Údaje o provozovnách
     fac_headers = bs.find_all('table', {'class': 'lic-tez-header-table'})
@@ -188,9 +287,16 @@ def parse_page(business: str, lic_id: str, bs: bs4.BeautifulSoup) -> Licence:
 
         # Zpracování výkonů k provozovně
         fac_capacity = parse_capacity(data)
+
         for k, v in fac_capacity.items():
-            if len(k) == 2 and v > 0:
-                vykon_fac = VykonProvozovna(provozovna_id=facility.id, druh=k[1], technologie=k[0], mw=v)
+            if len(k) == 2 and ((isinstance(v, float)) and (v > 0)):
+                vykon_fac = VykonProvozovna(
+                    provozovna_id=facility.id,
+                    lic_id=lic_id,
+                    druh=k[1],
+                    technologie=k[0],
+                    mw=v
+                    )
                 facility.add_capacity(vykon_fac)
             if k == 'Počet zdrojů':
                 facility.pocet_zdroju = int(v)
@@ -206,6 +312,6 @@ if __name__ == '__main__':
     oleska = pathlib.Path('samples/oleska.html')
 
     with open(oleska) as f:
-        bs = BeautifulSoup(f, 'html.parser') 
+        bs = BeautifulSoup(f, 'html.parser')
     lic = parse_page('110100010', bs)
     print(lic)
