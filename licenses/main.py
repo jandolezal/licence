@@ -23,7 +23,7 @@ def read_lic_count(business: str) -> int:
 
     with open(csv_path) as csvf:
         reader = csv.DictReader(csvf)
-        return len(list(reader)) - 1  # Subtract header
+        return len(list(reader))
 
 
 def get_data(business: str, lic_ids: List, url: str, start: int, end: int):

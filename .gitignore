@@ -1,5 +1,5 @@
 *.json
-*.csv
+csvs/
 *.db
 *.xml
 dist/

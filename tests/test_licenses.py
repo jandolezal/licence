@@ -1,8 +1,32 @@
 import pathlib
+import os
+from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 
 from licenses import parse
+from licenses.main import read_lic_ids, read_lic_count
+
+
+@patch('pathlib.Path')
+def test_read_lic_ids(mock_path):
+    sample_path = os.path.abspath('samples/sample_holders.csv')
+    mock_path.return_value = sample_path
+
+    ids_list = read_lic_ids('electricity')
+
+    assert ids_list[0] == '110100009'
+    assert ids_list[-1] == '110100032'
+
+
+@patch('pathlib.Path')
+def test_read_lic_count(mock_path):
+    sample_path = os.path.abspath('samples/sample_holders.csv')
+    mock_path.return_value = sample_path
+
+    ids_count = read_lic_count('electricity')
+
+    assert ids_count == 10
 
 
 def test_plzen():
