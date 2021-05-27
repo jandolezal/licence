@@ -9,6 +9,8 @@ z nichž ke každé provozovně je pár údajů jako název nebo okres
 a opět seznam výkonů.
 
 Některé části mohou náhodně scházet.
+HTML není konzistentní, např. <th> a <td>, identifikace <table>
+jednou jako id, jindy jako class.
 """
 
 import unicodedata
@@ -66,9 +68,10 @@ class Provozovna:
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
-    def export_to_csv(self, business, capacities=True):
+    def export_to_csv(self, business, output_dir='csvs'):
         # Metadata for the facility
-        fac_dir = pathlib.Path(f'csvs/licenses/{business}')
+        fac_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
+
         if (fac_dir / 'facilities.csv').exists():
             header = False
         else:
@@ -89,26 +92,25 @@ class Provozovna:
             writer.writerow(export_dict)
 
         # Capacities for the facility
-        if capacities:
-            cap_dir = pathlib.Path(f'csvs/licenses/{business}')
+        cap_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
 
-            if (cap_dir / 'facilities_capacities.csv').exists():
-                header = False
-            else:
-                header = True
+        if (cap_dir / 'facilities_capacities.csv').exists():
+            header = False
+        else:
+            header = True
 
-            cap_dir.mkdir(parents=True, exist_ok=True)
-            with open(cap_dir / 'facilities_capacities.csv', 'a') as csvf2:
-                fieldnames = [
-                    field.name for field in fields(VykonProvozovna)
-                    if not field.default_factory == list
-                    ]
-                writer = csv.DictWriter(csvf2, fieldnames=fieldnames)
-                if header:
-                    writer.writeheader()
-                for cap in self.vykony:
-                    export_dict = asdict(cap)
-                    writer.writerow(export_dict)
+        cap_dir.mkdir(parents=True, exist_ok=True)
+        with open(cap_dir / 'facilities_capacities.csv', 'a') as csvf2:
+            fieldnames = [
+                field.name for field in fields(VykonProvozovna)
+                if not field.default_factory == list
+                ]
+            writer = csv.DictWriter(csvf2, fieldnames=fieldnames)
+            if header:
+                writer.writeheader()
+            for cap in self.vykony:
+                export_dict = asdict(cap)
+                writer.writerow(export_dict)
 
 
 @dataclass
@@ -126,9 +128,9 @@ class Licence:
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
-    def export_to_csv(self, business, facilities=True, capacities=True):
+    def export_to_csv(self, business, output_dir='csvs'):
 
-        lic_dir = pathlib.Path(f'csvs/licenses/{business}')
+        lic_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
 
         if lic_dir.exists():
             header = False
@@ -152,32 +154,36 @@ class Licence:
             writer.writerow(export_dict)
 
         # Export facilities
-        if facilities:
-            for prov in self.provozovny:
-                prov.export_to_csv(business, capacities=True)
+        for prov in self.provozovny:
+            prov.export_to_csv(business, output_dir)
 
         # Capacities only for the license itself
-        if capacities:
-            cap_dir = pathlib.Path(f'csvs/licenses/{business}')
-            cap_dir.mkdir(parents=True, exist_ok=True)
-            with open(cap_dir / 'capacities.csv', 'a') as csvf:
-                fieldnames = [
-                    field.name for field in fields(VykonLicence)
-                    if not field.default_factory == list
-                    ]
-                writer = csv.DictWriter(csvf, fieldnames=fieldnames)
-                if header:
-                    writer.writeheader()
-                for cap in self.vykony:
-                    export_dict = asdict(cap)
-                    writer.writerow(export_dict)
+        cap_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
+        cap_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(cap_dir / 'capacities.csv', 'a') as csvf:
+            fieldnames = [
+                field.name for field in fields(VykonLicence)
+                if not field.default_factory == list
+                ]
+            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
+            if header:
+                writer.writeheader()
+            for cap in self.vykony:
+                export_dict = asdict(cap)
+                writer.writerow(export_dict)
 
 
-def request_soup(url: str, params: dict) -> bs4.BeautifulSoup:
+def request_soup(url: str, count: int, params: dict) -> bs4.BeautifulSoup:
     """Request page and retur BeautifulSoup from its text
     """
     headers = {'User-Agent': conf.get('headers', 'user_agent')}
-    r = requests.get(url, params=params, headers=headers)
+    try:
+        r = requests.get(url, params=params, headers=headers, timeout=3)
+    except requests.exceptions.RequestException:
+        print(f'Request failed handling license # {count}')
+        print(f'License URL: {url}')
+        raise SystemExit
     r.encoding = 'utf-8'
     return BeautifulSoup(r.text, 'html.parser')
 

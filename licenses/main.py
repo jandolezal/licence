@@ -26,7 +26,9 @@ def read_lic_count(business: str) -> int:
         return len(list(reader))
 
 
-def get_data(business: str, lic_ids: List, url: str, start: int, end: int):
+def get_data(
+    business: str, lic_ids: List, url: str, start: int, end: int
+        ) -> List[parse.Licence]:
 
     count = 0
 
@@ -35,7 +37,7 @@ def get_data(business: str, lic_ids: List, url: str, start: int, end: int):
     for lic_id in lic_ids[start:end]:
         params = {'lic-id': lic_id}
         try:
-            soup = parse.request_soup(url, params=params)
+            soup = parse.request_soup(url, count, params=params)
             parsed_lic = parse.parse_page(business, lic_id, soup)
         except Error as e:
             print(e)
@@ -52,10 +54,10 @@ def get_data(business: str, lic_ids: List, url: str, start: int, end: int):
     return lic_list
 
 
-def get_parser():
+def get_parser() -> None:
     parser = argparse.ArgumentParser(
         prog='licenses',
-        description='Retrieves data from licences',
+        description='Retrieves data from licences based on ids in holders set',
     )
 
     # Options
@@ -104,7 +106,7 @@ def get_parser():
     return parser
 
 
-def main():
+def main() -> None:
 
     # Mapping from names used in the directory tree
     business_map = {
@@ -130,7 +132,7 @@ def main():
     lic_ids = read_lic_ids(business)
     url = conf.get('licenses', 'url')
 
-    # Use these numbers to request data for this license
+    # Use these numbers to request data for licenses
     parsed_licenses = get_data(
         business_map[business],
         lic_ids,
@@ -141,7 +143,7 @@ def main():
 
     if args['csv']:
         for lic in parsed_licenses:
-            lic.export_to_csv(business, facilities=True, capacities=True)
+            lic.export_to_csv(business, output_dir='csvs')
 
 
 if __name__ == '__main__':
