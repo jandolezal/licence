@@ -1,7 +1,7 @@
 import unittest
 from collections import namedtuple
-import parsuj
-import adresy
+from old import parsuj
+from old import adresy
 
 
 URL = 'http://licence.eru.cz/detail.php'

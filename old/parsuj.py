@@ -6,7 +6,7 @@
 import unicodedata
 import requests
 from bs4 import BeautifulSoup
-import adresy
+from old import adresy
 
 
 def parsuj_vykony(tabulka):

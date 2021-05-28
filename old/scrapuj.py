@@ -5,8 +5,8 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Subjekt, Provozovna
-import parsuj
+from old.models import Subjekt, Provozovna
+from old import parsuj
 
 
 def scrapuj(url, params, db, start, end):
