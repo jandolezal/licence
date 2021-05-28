@@ -1,7 +1,9 @@
 # Scraping licencí ERÚ na výrobu elektřiny
 
-Scraping [informací o držitelích](https://www.eru.cz/cs/licence/informace-o-drzitelich) a údajů z udělených [licencí](http://licence.eru.cz/) na výrobu elektřiny z webu Energetického regulačního úřadu.
+Získání [informací o držitelích](https://www.eru.cz/cs/licence/informace-o-drzitelich) a scraping údajů z udělených [licencí](http://licence.eru.cz/) z webů Energetického regulačního úřadu.
 
-Script subjekty nejprve získá data o [držitelích](https://www.eru.cz/cs/licence/informace-o-drzitelich) licence na výrobu elektřiny, scrapuj pak doplní data o provozovnách ze seznamu udělených [licencí](http://licence.eru.cz/).
+Pomocí balíčku `holders` lze získat informace z xml souborů vždy pro určitý předmět licence (výroba elektřiny, distribuce plynu), které obsahují číslo licence (původně `cislo_licence`, zde `id`).
 
-Pouze získání aktuálních dat v daný čas.
+Podle čísel licencí je potom možné díky balíčku `licenses` scrapovat data pro příslušnou licenci (zatím pouze pro výrobu elektřiny a výrobu tepelné energie).
+
+Pouze získání aktuálních dat v daný čas do csv souborů.
