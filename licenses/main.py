@@ -143,7 +143,8 @@ def main() -> None:
 
     if args['csv']:
         for lic in parsed_licenses:
-            lic.export_to_csv(business, output_dir='csvs')
+            output_dir = pathlib.Path(f'csvs/licenses/{business}')
+            lic.to_csv(output_dir, 'licenses.csv')
 
 
 if __name__ == '__main__':

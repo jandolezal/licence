@@ -15,7 +15,7 @@ jednou jako id, jindy jako class.
 
 import unicodedata
 from dataclasses import dataclass, field, fields, asdict
-import pathlib
+from pathlib import Path
 from typing import List
 import csv
 
@@ -29,7 +29,33 @@ from licenses.config import conf
 
 
 @dataclass
-class VykonProvozovna:
+class Base:
+
+    def to_csv(self, output_dir: Path, filename: str) -> None:
+        if (output_dir / filename).exists():
+            header = False
+        else:
+            header = True
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(output_dir / filename, 'a') as csvf:
+            fieldnames = [
+                field.name for field in fields(self)
+                if not field.default_factory == list
+                ]
+            writer = csv.DictWriter(
+                csvf, fieldnames=fieldnames, extrasaction='ignore',
+                )
+
+            if header:
+                writer.writeheader()
+
+            writer.writerow(asdict(self))
+
+
+@dataclass
+class VykonProvozovna(Base):
 
     provozovna_id: int
     lic_id: str
@@ -39,7 +65,7 @@ class VykonProvozovna:
 
 
 @dataclass
-class VykonLicence:
+class VykonLicence(Base):
 
     lic_id: str
     druh: str
@@ -48,7 +74,7 @@ class VykonLicence:
 
 
 @dataclass
-class Provozovna:
+class Provozovna(Base):
 
     id: int
     lic_id: str
@@ -68,53 +94,9 @@ class Provozovna:
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
-    def export_to_csv(self, business, output_dir='csvs'):
-        # Metadata for the facility
-        fac_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
-
-        if (fac_dir / 'facilities.csv').exists():
-            header = False
-        else:
-            header = True
-
-        fac_dir.mkdir(parents=True, exist_ok=True)
-        with open(fac_dir / 'facilities.csv', 'a') as csvf:
-            fieldnames = [
-                field.name for field in fields(Provozovna)
-                if not field.default_factory == list
-                ]
-            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
-            if header:
-                writer.writeheader()
-
-            export_dict = asdict(self)
-            export_dict.pop('vykony')  # Remove list
-            writer.writerow(export_dict)
-
-        # Capacities for the facility
-        cap_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
-
-        if (cap_dir / 'facilities_capacities.csv').exists():
-            header = False
-        else:
-            header = True
-
-        cap_dir.mkdir(parents=True, exist_ok=True)
-        with open(cap_dir / 'facilities_capacities.csv', 'a') as csvf2:
-            fieldnames = [
-                field.name for field in fields(VykonProvozovna)
-                if not field.default_factory == list
-                ]
-            writer = csv.DictWriter(csvf2, fieldnames=fieldnames)
-            if header:
-                writer.writeheader()
-            for cap in self.vykony:
-                export_dict = asdict(cap)
-                writer.writerow(export_dict)
-
 
 @dataclass
-class Licence:
+class Licence(Base):
 
     id: str
     predmet: str
@@ -128,50 +110,16 @@ class Licence:
     def add_capacity(self, capacity):
         self.vykony.append(capacity)
 
-    def export_to_csv(self, business, output_dir='csvs'):
+    def to_csv(self, output_dir: Path, filename: str = 'licenses.csv') -> None:
+        super().to_csv(output_dir, filename)
 
-        lic_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
+        for cap in self.vykony:
+            cap.to_csv(output_dir, 'capacities.csv')
 
-        if lic_dir.exists():
-            header = False
-        else:
-            header = True
-
-        lic_dir.mkdir(parents=True, exist_ok=True)
-
-        # Few metadata for license
-        with open(lic_dir / 'licenses.csv', 'a') as csvf:
-            fieldnames = [
-                field.name for field in fields(Licence)
-                if not field.default_factory == list
-                ]
-            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
-            if header:
-                writer.writeheader()
-            export_dict = asdict(self)
-            export_dict.pop('vykony')  # Remove lists
-            export_dict.pop('provozovny')
-            writer.writerow(export_dict)
-
-        # Export facilities
-        for prov in self.provozovny:
-            prov.export_to_csv(business, output_dir)
-
-        # Capacities only for the license itself
-        cap_dir = pathlib.Path(f'{output_dir}/licenses/{business}')
-        cap_dir.mkdir(parents=True, exist_ok=True)
-
-        with open(cap_dir / 'capacities.csv', 'a') as csvf:
-            fieldnames = [
-                field.name for field in fields(VykonLicence)
-                if not field.default_factory == list
-                ]
-            writer = csv.DictWriter(csvf, fieldnames=fieldnames)
-            if header:
-                writer.writeheader()
-            for cap in self.vykony:
-                export_dict = asdict(cap)
-                writer.writerow(export_dict)
+        for fac in self.provozovny:
+            fac.to_csv(output_dir, 'facilities.csv')
+            for fac_cap in fac.vykony:
+                fac_cap.to_csv(output_dir, 'facilities_capacities.csv')
 
 
 def request_soup(url: str, count: int, params: dict) -> bs4.BeautifulSoup:
@@ -180,9 +128,10 @@ def request_soup(url: str, count: int, params: dict) -> bs4.BeautifulSoup:
     headers = {'User-Agent': conf.get('headers', 'user_agent')}
     try:
         r = requests.get(url, params=params, headers=headers, timeout=3)
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
         print(f'Request failed handling license # {count}')
-        print(f'License URL: {url}')
+        print(f'License id: {params["lic-id"]}')
+        print(e)
         raise SystemExit
     r.encoding = 'utf-8'
     return BeautifulSoup(r.text, 'html.parser')
@@ -313,9 +262,9 @@ def parse_page(business: str, lic_id: str, bs: bs4.BeautifulSoup) -> Licence:
 
 
 if __name__ == '__main__':
-    plana = pathlib.Path('samples/cenergyplana.html')
-    plzen = pathlib.Path('samples/plzen.html')
-    oleska = pathlib.Path('samples/oleska.html')
+    plana = Path('samples/cenergyplana.html')
+    plzen = Path('samples/plzen.html')
+    oleska = Path('samples/oleska.html')
 
     with open(oleska) as f:
         bs = BeautifulSoup(f, 'html.parser')

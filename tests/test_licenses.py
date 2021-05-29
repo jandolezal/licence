@@ -101,9 +101,9 @@ def test_plzen_export_to_csv():
         result = parse.parse_page('výroba elektřiny', '110100054', bs)
 
     # Export csvs within tests directory
-    result.export_to_csv('electricity', 'tests')
-
     output_dir = pathlib.Path('tests/licenses/electricity/')
+    result.to_csv(output_dir, 'licenses.csv')
+
     output_dir_list = list(output_dir.iterdir())
     sub_path = 'tests/licenses/electricity'
 
